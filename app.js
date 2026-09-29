@@ -18,6 +18,48 @@ function scopeSenses(e){
   })
 }
 function searchText(e){return C.fold(scopeSenses(e).map(s=>(s.description||'')+' '+(s.source_text||'')).join(' '))}
+function sensesForPos(e,code){return senses(e).filter(s=>code==='all'||s.pos===code)}
+function searchTextForPos(e,code){return C.fold(sensesForPos(e,code).map(s=>(s.description||'')+' '+(s.source_text||'')).join(' '))}
+function rankForPos(e,code,q){
+  const lemma=C.fold(e.lemma);
+  if(!q)return 0;
+  if(lemma===q)return 0;
+  if(lemma.startsWith(q))return 10;
+  if(lemma.includes(q))return 20;
+  if(q.length>=4&&boundedNear(lemma,q))return 28;
+  if(searchTextForPos(e,code).includes(q))return 40;
+  return null
+}
+function classVisibleCount(e,code){
+  let ss=sensesForPos(e,code);
+  if(sf==='S')ss=ss.filter(s=>s.predicator);
+  else if(sf==='N')ss=ss.filter(s=>!s.predicator);
+  return ss.length
+}
+function classFacetCount(code){
+  const q=C.fold(qel().value.trim());
+  const min=Number(document.querySelector('#minSenses').value);
+  const max=Number(document.querySelector('#maxSenses').value);
+  let total=0;
+  for(const e of E){
+    const n=senses(e).length;
+    if(n<min||n>max||!okProfile(e))continue;
+    const ss=sensesForPos(e,code);
+    if(!ss.length)continue;
+    if(alpha!=='all'&&!C.fold(e.lemma).startsWith(C.fold(alpha)))continue;
+    if(rankForPos(e,code,q)===null)continue;
+    total+=classVisibleCount(e,code);
+  }
+  return total
+}
+function updateClassCounts(){
+  const host=document.querySelector('#classFilters');
+  if(!host)return;
+  host.querySelectorAll('[data-pos]').forEach(b=>{
+    const c=b.querySelector('small');
+    if(c)c.textContent=C.format(classFacetCount(b.dataset.pos));
+  });
+}
 function okProfile(e){if(pf==='all')return true;if(pf==='hasS')return predCount(e)>0;return profile(e)===pf}
 function senseEligible(s){if(sf==='S'&&!s.predicator)return false;if(sf==='N'&&s.predicator)return false;if(pos!=='all'&&s.pos!==pos)return false;if(vtype!=='all'&&s.verb_type!==vtype)return false;if(sem!=='all'&&s.semantic_class!==sem)return false;if(flag!=='all'&&!(s.flags||[]).includes(flag))return false;return true}
 function visibleSenses(e){return senses(e).filter(senseEligible)}
@@ -30,7 +72,7 @@ function rows(){
 }
 function meta(e){const ss=visibleSenses(e),p=ss.filter(s=>s.predicator).length,n=ss.length-p;const classPart=CFG.kind==='nonnv'?[...new Set(ss.map(s=>s.pos_label))].join(' · '):'';if(sf==='S')return `${C.format(p)} ${plural(p,'acepção predicadora','acepções predicadoras')}`;if(sf==='N')return `${C.format(n)} ${plural(n,'acepção não predicadora','acepções não predicadoras')}`;const a=[`${C.format(ss.length)} ${plural(ss.length,'acepção','acepções')}`];if(p)a.push(`${C.format(p)} ${plural(p,'predicadora','predicadoras')}`);if(n)a.push(`${C.format(n)} ${plural(n,'não predicadora','não predicadoras')}`);if(classPart)a.push(classPart);return a.join(' · ')}
 function renderMore(batch=140){const h=document.querySelector('#list'),end=Math.min(rendered+batch,renderRows.length);if(end<=rendered)return;h.insertAdjacentHTML('beforeend',renderRows.slice(rendered,end).map(e=>`<button class="lem ${sel===e.lemma?'sel':''}" data-l="${C.esc(e.lemma)}"><span class="lex-main"><strong>${C.esc(e.lemma)}</strong><small>${C.esc(meta(e))}</small></span><span class="chev">›</span></button>`).join(''));h.querySelectorAll('.lem:not([data-bound])').forEach(b=>{b.dataset.bound='1';b.onclick=()=>show(b.dataset.l)});rendered=end}
-function list(){const r=rows(),vis=r.reduce((a,e)=>a+visibleSenses(e).length,0);document.querySelector('#count').textContent=`${C.format(r.length)} ${plural(r.length,CFG.itemSingular,CFG.itemPlural)} · ${C.format(vis)} ${plural(vis,'acepção','acepções')}`;document.querySelector('#list').innerHTML='';renderRows=r;rendered=0;renderMore();updateCounts();activeFilters()}
+function list(){const r=rows(),vis=r.reduce((a,e)=>a+visibleSenses(e).length,0);document.querySelector('#count').textContent=`${C.format(r.length)} ${plural(r.length,CFG.itemSingular,CFG.itemPlural)} · ${C.format(vis)} ${plural(vis,'acepção','acepções')}`;document.querySelector('#list').innerHTML='';renderRows=r;rendered=0;renderMore();updateCounts();updateClassCounts();activeFilters()}
 function updateCounts(){const base=E.filter(e=>{const n=senses(e).length,min=Number(document.querySelector('#minSenses').value),max=Number(document.querySelector('#maxSenses').value);if(n<min||n>max)return false;const q=C.fold(qel().value.trim());if(scopeSenses(e).length===0)return false;const x={e,lemma:C.fold(e.lemma)};if(rank(x,q)===null)return false;if(alpha!=='all'&&!x.lemma.startsWith(C.fold(alpha)))return false;return true});const pc={all:base.length,hasS:base.filter(e=>predCount(e)>0).length,allS:base.filter(e=>profile(e)==='allS').length,mixed:base.filter(e=>profile(e)==='mixed').length,nonly:base.filter(e=>profile(e)==='nonly').length};document.querySelectorAll('#profiles button').forEach(b=>b.querySelector('.facet-count').textContent=C.format(pc[b.dataset.p]||0))}
 function activeFilters(){const h=document.querySelector('#activeFilters'),arr=[];const q=qel().value.trim();if(q)arr.push(['Busca: '+q,()=>{qel().value='';list()}]);if(pf!=='all')arr.push(['Perfil',()=>{pf='all';sync();list()}]);if(sf!=='all')arr.push([sf==='S'?'Predicadoras':'Não predicadoras',()=>{sf='all';sync();sel?renderEntry(current()):list()}]);if(pos!=='all')arr.push([POS_LABELS[pos]||pos,()=>{pos='all';syncExtra();list()}]);if(vtype!=='all')arr.push([vtype,()=>{vtype='all';syncExtra();list()}]);if(sem!=='all')arr.push([sem,()=>{sem='all';syncExtra();list()}]);if(flag!=='all')arr.push([flag,()=>{flag='all';syncExtra();list()}]);if(alpha!=='all')arr.push(['Letra: '+alpha,()=>{alpha='all';alphabet();list()}]);h.innerHTML='';h.hidden=!arr.length;arr.forEach(([t,fn])=>{const b=document.createElement('button');b.className='filter-chip';b.textContent=t+' ×';b.onclick=fn;h.appendChild(b)})}
 const POS_LABELS=CFG.posLabels||{};

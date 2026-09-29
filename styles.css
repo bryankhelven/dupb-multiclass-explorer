@@ -126,3 +126,9 @@ footer{padding:16px;text-align:center;font-size:12px;color:var(--muted);backgrou
   .class-filter-grid.compact{grid-template-columns:repeat(3,minmax(0,1fr))}
   .class-filter-grid.compact .class-filter{height:40px}
 }
+
+/* Class selector can be collapsed without changing class-filter behavior. */
+.class-selector-section{margin-top:10px}
+.class-selector-section>summary{padding-top:7px}
+.class-selector-section .class-filter-wrap{margin:0 0 2px}
+.class-selector-section:not([open]){padding-bottom:2px}
