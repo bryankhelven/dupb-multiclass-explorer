@@ -1,0 +1,19 @@
+{
+  "resource_id": "DUPB_MULTICLASS_EXPLORER",
+  "source": "DUPB",
+  "total_lemmas": 20736,
+  "senses": 37975,
+  "predicator_senses": 2979,
+  "non_predicator_senses": 34996,
+  "has_predicator_lemmas": 1673,
+  "n_only_lemmas": 19063,
+  "pos_count": 9,
+  "generated_text": false,
+  "paraphrased_text": false,
+  "missing_isolated_glosses": 15,
+  "source_family_units_before_pos_routing": 37977,
+  "v_units_routed_to_verbal_explorer": 2,
+  "public_multicategorial_units": 37975,
+  "display_name": "DUPB Multi-Class Explorer",
+  "version": "1.0.0"
+}

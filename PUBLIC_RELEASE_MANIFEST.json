@@ -1,0 +1,15 @@
+{
+  "resource": "DUPB Multi-Class Explorer",
+  "repository": "bryankhelven/dupb-multiclass-explorer",
+  "pages": "https://bryankhelven.github.io/dupb-multiclass-explorer/",
+  "release": "1",
+  "date": "2026-09-29",
+  "counts": {
+    "entries": 20736,
+    "senses": 37975,
+    "predicator_senses": 2979,
+    "non_predicator_senses": 34996
+  },
+  "dataset_sha256": "94ee7f774f26b35d626f1361a031ab91dc5fb0736ba27d2ae2756c00797de29d",
+  "scientific_mutation": false
+}
